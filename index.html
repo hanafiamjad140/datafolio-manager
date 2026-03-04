@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DataFolio Manager</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --sb-bg:       #0f172a;
+      --sb-hover:    #1e293b;
+      --sb-active:   #2563eb;
+      --sb-text:     #94a3b8;
+      --sb-border:   #1e293b;
+      --main-bg:     #f1f5f9;
+      --card-bg:     #ffffff;
+      --text-1:      #0f172a;
+      --text-2:      #64748b;
+      --text-3:      #94a3b8;
+      --accent:      #3b82f6;
+      --accent-d:    #2563eb;
+      --border:      #e2e8f0;
+      --success:     #10b981;
+      --danger:      #ef4444;
+      --warning:     #f59e0b;
+      --r:           12px;
+      --r-sm:        8px;
+      --sh:          0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.05);
+      --sh-md:       0 4px 12px rgba(0,0,0,.08);
+      --sh-lg:       0 10px 30px rgba(0,0,0,.12);
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--main-bg);
+      color: var(--text-1);
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Layout */
+    #app { display: flex; height: 100vh; }
+
+    #sidebar {
+      width: 256px; min-width: 256px;
+      background: var(--sb-bg);
+      display: flex; flex-direction: column;
+      overflow: hidden;
+      border-right: 1px solid var(--sb-border);
+    }
+
+    #main-area {
+      flex: 1;
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+
+    #topbar {
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border);
+      height: 66px; min-height: 66px;
+      display: flex; align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+    }
+
+    #view {
+      flex: 1;
+      overflow-y: auto;
+      padding: 32px;
+    }
+
+    /* Sidebar */
+    .sb-logo {
+      padding: 22px 20px 18px;
+      border-bottom: 1px solid var(--sb-border);
+      display: flex; align-items: center; gap: 12px;
+    }
+    .sb-logo-icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, #3b82f6, #6366f1);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+    .sb-logo-text { line-height: 1.2; }
+    .sb-logo-title { font-size: 15px; font-weight: 700; color: #fff; }
+    .sb-logo-sub   { font-size: 11px; color: var(--sb-text); font-weight: 400; }
+
+    .sb-nav { padding: 14px 10px 8px; }
+    .sb-section-label {
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .08em;
+      color: #475569; padding: 0 8px; margin-bottom: 5px;
+    }
+    .sb-item {
+      display: flex; align-items: center; gap: 11px;
+      padding: 9px 12px; border-radius: 8px;
+      cursor: pointer; color: var(--sb-text);
+      font-size: 13.5px; font-weight: 500;
+      transition: background .12s, color .12s;
+      margin-bottom: 2px; user-select: none;
+    }
+    .sb-item:hover { background: var(--sb-hover); color: #e2e8f0; }
+    .sb-item.active { background: var(--sb-active); color: #fff; }
+    .sb-item-icon { font-size: 15px; width: 20px; text-align: center; flex-shrink: 0; }
+
+    .sb-tables {
+      flex: 1; overflow-y: auto;
+      border-top: 1px solid var(--sb-border);
+      padding: 0 10px 12px;
+    }
+    .sb-tables-hdr {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 8px 7px;
+    }
+    .sb-tables-hdr-label {
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .08em;
+      color: #475569;
+    }
+    .sb-add-btn {
+      background: none; border: none;
+      color: var(--accent); cursor: pointer;
+      font-size: 20px; line-height: 1;
+      width: 26px; height: 26px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 6px; transition: background .12s;
+    }
+    .sb-add-btn:hover { background: var(--sb-hover); }
+
+    .sb-tbl-item {
+      display: flex; align-items: center; gap: 9px;
+      padding: 7px 10px; border-radius: 7px;
+      cursor: pointer; color: var(--sb-text);
+      font-size: 13px; font-weight: 500;
+      transition: background .12s, color .12s;
+      margin-bottom: 1px; user-select: none;
+    }
+    .sb-tbl-item:hover { background: var(--sb-hover); color: #e2e8f0; }
+    .sb-tbl-item.active { background: #1e293b; color: #e2e8f0; }
+    .sb-tbl-icon { font-size: 14px; }
+
+    /* Topbar */
+    .tb-title { font-size: 19px; font-weight: 700; color: var(--text-1); }
+    .tb-sub   { font-size: 12.5px; color: var(--text-2); margin-top: 2px; }
+    .tb-actions { display: flex; gap: 10px; align-items: center; }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 8px 16px; border-radius: var(--r-sm);
+      font-size: 13.5px; font-weight: 500;
+      cursor: pointer; border: none;
+      font-family: inherit; transition: all .15s;
+      white-space: nowrap;
+    }
+    .btn-primary   { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent-d); }
+    .btn-secondary { background: var(--main-bg); color: var(--text-1); border: 1px solid var(--border); }
+    .btn-secondary:hover { background: #e2e8f0; }
+    .btn-danger    { background: #fef2f2; color: var(--danger); border: 1px solid #fecaca; }
+    .btn-danger:hover { background: #fee2e2; }
+    .btn-sm  { padding: 6px 12px; font-size: 12.5px; }
+    .btn-xs  { padding: 4px 9px; font-size: 12px; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* Cards */
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--r);
+      border: 1px solid var(--border);
+      box-shadow: var(--sh);
+    }
+    .card-hdr {
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .card-title { font-size: 15px; font-weight: 600; }
+    .card-body  { padding: 22px; }
+
+    /* Stats */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 18px; margin-bottom: 28px;
+    }
+    .stat-card {
+      background: var(--card-bg);
+      border-radius: var(--r);
+      border: 1px solid var(--border);
+      padding: 22px; box-shadow: var(--sh);
+    }
+    .stat-icon {
+      width: 44px; height: 44px;
+      border-radius: 11px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; margin-bottom: 14px;
+    }
+    .stat-val   { font-size: 30px; font-weight: 800; line-height: 1; margin-bottom: 5px; }
+    .stat-label { font-size: 12.5px; color: var(--text-2); font-weight: 500; }
+
+    /* Table cards */
+    .tbl-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 18px;
+    }
+    .tbl-card {
+      background: var(--card-bg);
+      border-radius: var(--r);
+      border: 1px solid var(--border);
+      padding: 22px; box-shadow: var(--sh);
+      cursor: pointer;
+      transition: box-shadow .18s, border-color .18s, transform .18s;
+    }
+    .tbl-card:hover { box-shadow: var(--sh-md); border-color: var(--accent); transform: translateY(-2px); }
+    .tbl-card-icon { font-size: 34px; margin-bottom: 14px; }
+    .tbl-card-name { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+    .tbl-card-meta { font-size: 12.5px; color: var(--text-2); }
+    .tbl-card-footer {
+      display: flex; gap: 8px; margin-top: 14px;
+      padding-top: 14px; border-top: 1px solid var(--border);
+    }
+
+    .new-tbl-card {
+      background: var(--main-bg);
+      border: 2px dashed var(--border);
+      border-radius: var(--r);
+      padding: 22px; cursor: pointer;
+      transition: border-color .18s, background .18s;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      min-height: 160px; text-align: center;
+      gap: 8px;
+    }
+    .new-tbl-card:hover { border-color: var(--accent); background: #eff6ff; }
+    .new-tbl-plus { font-size: 32px; color: var(--accent); }
+
+    /* Badges */
+    .badge {
+      display: inline-flex; align-items: center;
+      padding: 2px 9px; border-radius: 100px;
+      font-size: 11.5px; font-weight: 600;
+    }
+    .badge-blue   { background: #dbeafe; color: #1e40af; }
+    .badge-green  { background: #d1fae5; color: #065f46; }
+    .badge-red    { background: #fee2e2; color: #991b1b; }
+
+    /* Data grid */
+    .dgrid-wrap { overflow-x: auto; }
+    .dgrid { width: 100%; border-collapse: collapse; }
+    .dgrid th {
+      text-align: left; padding: 11px 15px;
+      font-size: 11.5px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: .05em;
+      color: var(--text-2); background: #f8fafc;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .dgrid td {
+      padding: 10px 15px; font-size: 13.5px;
+      color: var(--text-1);
+      border-bottom: 1px solid var(--border);
+      max-width: 220px; overflow: hidden;
+      text-overflow: ellipsis; white-space: nowrap;
+    }
+    .dgrid tr:last-child td { border-bottom: none; }
+    .dgrid tr:hover td { background: #f8fafc; }
+    .dgrid td .photo-thumb {
+      width: 36px; height: 36px;
+      object-fit: cover; border-radius: 6px;
+    }
+
+    /* Forms */
+    .form-group { margin-bottom: 18px; }
+    .form-label {
+      display: block; font-size: 13px; font-weight: 600;
+      color: var(--text-1); margin-bottom: 7px;
+    }
+    .form-label .type-chip {
+      font-size: 11px; font-weight: 500;
+      color: var(--text-2); background: var(--main-bg);
+      border: 1px solid var(--border);
+      padding: 1px 7px; border-radius: 4px; margin-left: 7px;
+    }
+    .form-input {
+      width: 100%; padding: 9px 13px;
+      border: 1px solid var(--border); border-radius: var(--r-sm);
+      font-size: 13.5px; font-family: inherit;
+      color: var(--text-1); background: #fff;
+      transition: border-color .15s, box-shadow .15s;
+      outline: none;
+    }
+    .form-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(59,130,246,.12);
+    }
+    .form-select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+      background-repeat: no-repeat; background-position: right 11px center;
+      background-size: 13px; padding-right: 34px;
+    }
+
+    /* Toggle */
+    .toggle-wrap { display: flex; align-items: center; gap: 11px; }
+    .toggle { position: relative; width: 42px; height: 23px; cursor: pointer; flex-shrink: 0; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-track {
+      position: absolute; inset: 0;
+      background: #cbd5e1; border-radius: 23px; transition: .2s;
+    }
+    .toggle-track::before {
+      content: ''; position: absolute;
+      width: 17px; height: 17px; left: 3px; top: 3px;
+      background: #fff; border-radius: 50%; transition: .2s;
+    }
+    .toggle input:checked + .toggle-track { background: var(--accent); }
+    .toggle input:checked + .toggle-track::before { transform: translateX(19px); }
+
+    /* Studio */
+    .field-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+    .field-item {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--main-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm); padding: 10px 14px;
+    }
+    .drag-handle { color: var(--text-3); font-size: 15px; cursor: grab; flex-shrink: 0; }
+    .del-field-btn {
+      background: none; border: none; color: var(--text-3);
+      cursor: pointer; font-size: 20px; line-height: 1;
+      padding: 2px 4px; border-radius: 5px;
+      transition: color .12s, background .12s;
+      display: flex; align-items: center; flex-shrink: 0;
+    }
+    .del-field-btn:hover { color: var(--danger); background: #fef2f2; }
+
+    .icon-grid { display: flex; flex-wrap: wrap; gap: 7px; }
+    .icon-opt {
+      width: 38px; height: 38px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; border-radius: 8px; cursor: pointer;
+      border: 2px solid var(--border); background: var(--main-bg);
+      transition: border-color .12s, background .12s;
+    }
+    .icon-opt.sel { border-color: var(--accent); background: #eff6ff; }
+
+    /* Breadcrumb */
+    .breadcrumb {
+      display: flex; align-items: center; gap: 7px;
+      margin-bottom: 20px; font-size: 13.5px;
+    }
+    .bc-link { color: var(--text-2); cursor: pointer; }
+    .bc-link:hover { color: var(--accent); }
+    .bc-sep  { color: var(--text-3); }
+    .bc-cur  { color: var(--text-1); font-weight: 500; }
+
+    /* Search */
+    .search-wrap { position: relative; margin-bottom: 22px; }
+    .search-wrap .si { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); font-size: 17px; color: var(--text-3); pointer-events: none; }
+    .search-wrap input { padding-left: 42px; font-size: 15px; }
+
+    .result-item {
+      display: flex; align-items: flex-start; gap: 14px;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer; transition: background .12s;
+    }
+    .result-item:last-child { border-bottom: none; }
+    .result-item:hover { background: #f8fafc; }
+    .result-icon  { font-size: 22px; flex-shrink: 0; }
+    .result-title { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
+    .result-meta  { font-size: 12px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .result-tbl   { font-size: 11.5px; font-weight: 600; background: var(--main-bg); border: 1px solid var(--border); color: var(--text-2); padding: 2px 9px; border-radius: 100px; white-space: nowrap; margin-left: auto; }
+
+    /* Charts */
+    .chart-wrap { position: relative; height: 280px; }
+    .charts-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+
+    /* Dropzone */
+    .dropzone {
+      border: 2px dashed var(--border);
+      border-radius: var(--r); padding: 60px 32px;
+      text-align: center; cursor: pointer;
+      transition: border-color .18s, background .18s;
+      background: var(--main-bg);
+    }
+    .dropzone:hover, .dropzone.drag-over { border-color: var(--accent); background: #eff6ff; }
+    .dz-icon { font-size: 56px; margin-bottom: 16px; }
+    .dz-title { font-size: 19px; font-weight: 600; margin-bottom: 7px; }
+    .dz-sub   { font-size: 13.5px; color: var(--text-2); margin-bottom: 22px; line-height: 1.6; }
+
+    /* Empty state */
+    .empty-state { text-align: center; padding: 56px 32px; }
+    .empty-icon  { font-size: 56px; margin-bottom: 16px; }
+    .empty-title { font-size: 17px; font-weight: 600; margin-bottom: 7px; }
+    .empty-sub   { font-size: 13.5px; color: var(--text-2); }
+
+    /* Misc */
+    .fade-in { animation: fadeIn .18s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    .info-box {
+      background: #fffbeb; border: 1px solid #fde68a;
+      border-radius: 8px; padding: 14px 16px;
+      font-size: 13.5px; color: #92400e; line-height: 1.6;
+    }
+    @media (max-width: 900px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .charts-2col { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <aside id="sidebar"></aside>
+  <div id="main-area">
+    <header id="topbar"></header>
+    <main id="view"></main>
+  </div>
+</div>
+
+<script>
+const DFM = {
+
+  s: {
+    view:      'dashboard',
+    subView:   'list',
+    tableId:   null,
+    editRec:   null,
+    newDraft:  null,
+    editDraft: null,
+    chartTbl:  null,
+    searchQ:   '',
+  },
+
+  d: { tables: [], records: {} },
+  charts: {},
+
+  load() {
+    try {
+      const raw = localStorage.getItem('dfm_v2');
+      if (raw) { const p = JSON.parse(raw); this.d.tables = p.tables||[]; this.d.records = p.records||{}; }
+    } catch(e) {}
+  },
+  save() { localStorage.setItem('dfm_v2', JSON.stringify(this.d)); },
+
+  initDemo() {
+    if (this.d.tables.length) return;
+    const tid = 'tbl_caveVins';
+    this.d.tables.push({
+      id: tid, name: 'Cave \u00e0 Vins', icon: '\ud83c\udf77',
+      createdAt: new Date().toISOString(),
+      fields: [
+        {id:'f_name',    name:'Wine Name',     type:'text'},
+        {id:'f_vintage', name:'Vintage',        type:'number'},
+        {id:'f_region',  name:'Region',         type:'text'},
+        {id:'f_rating',  name:'Rating',         type:'number'},
+        {id:'f_stock',   name:'In Stock',       type:'yes/no'},
+        {id:'f_date',    name:'Purchase Date',  type:'date'},
+        {id:'f_notes',   name:'Notes',          type:'text'},
+      ]
+    });
+    this.d.records[tid] = [
+      {id:'r1', f_name:'Ch\u00e2teau Margaux',    f_vintage:2015, f_region:'Bordeaux',          f_rating:96,  f_stock:true,  f_date:'2022-03-15', f_notes:'Premier Grand Cru Class\u00e9'},
+      {id:'r2', f_name:'Roman\u00e9e-Conti',      f_vintage:2018, f_region:'Burgundy',          f_rating:99,  f_stock:false, f_date:'2021-11-08', f_notes:'Sold at auction 2023'},
+      {id:'r3', f_name:'Opus One',           f_vintage:2017, f_region:'Napa Valley',       f_rating:94,  f_stock:true,  f_date:'2023-01-20', f_notes:'Bordeaux-style blend'},
+      {id:'r4', f_name:'Sassicaia',          f_vintage:2019, f_region:'Tuscany',           f_rating:95,  f_stock:true,  f_date:'2023-06-12', f_notes:'Super Tuscan icon'},
+      {id:'r5', f_name:'Penfolds Grange',    f_vintage:2016, f_region:'South Australia',   f_rating:97,  f_stock:false, f_date:'2020-09-05', f_notes:'Shiraz flagship'},
+      {id:'r6', f_name:'Vega Sicilia \u00danico', f_vintage:2014, f_region:'Ribera del Duero',  f_rating:93,  f_stock:true,  f_date:'2022-07-30', f_notes:'Spanish legend'},
+      {id:'r7', f_name:'Petrus',             f_vintage:2012, f_region:'Pomerol',           f_rating:98,  f_stock:false, f_date:'2019-04-18', f_notes:'Merlot dominant'},
+      {id:'r8', f_name:'Screaming Eagle',    f_vintage:2020, f_region:'Napa Valley',       f_rating:100, f_stock:true,  f_date:'2024-02-01', f_notes:'Perfect score'},
+    ];
+    this.save();
+  },
+
+  uid()  { return '_'+Math.random().toString(36).substr(2,9)+'_'+Date.now(); },
+  esc(s) { return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); },
+  tbl(id){ return this.d.tables.find(t=>t.id===id); },
+  recs(id){ return this.d.records[id]||[]; },
+  fmtDate(s) {
+    if(!s) return '';
+    try { return new Date(s).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}); } catch(e){ return s; }
+  },
+  storageKB() {
+    const b = new Blob([localStorage.getItem('dfm_v2')||'']).size;
+    return b<1024 ? b+'B' : (b/1024).toFixed(1)+'KB';
+  },
+  destroyCharts() { Object.values(this.charts).forEach(c=>{ try{c.destroy();}catch(e){} }); this.charts={}; },
+
+  go(view, params={}) {
+    this.destroyCharts();
+    this.s.view    = view;
+    if('subView'  in params) this.s.subView  = params.subView;
+    if('tableId'  in params) this.s.tableId  = params.tableId;
+    if('editRec'  in params) this.s.editRec  = params.editRec;
+    this.render();
+  },
+
+  render() { this.rSidebar(); this.rTopbar(); this.rView(); },
+
+  rSidebar() {
+    const nav = [
+      {id:'dashboard', icon:'\u229e', label:'Dashboard'},
+      {id:'tables',    icon:'\u229f', label:'Tables'},
+      {id:'search',    icon:'\u2315', label:'Search'},
+      {id:'charts',    icon:'\u25ce', label:'Charts'},
+      {id:'import',    icon:'\u2295', label:'Import Excel'},
+    ];
+    const navHtml = nav.map(n=>`
+      <div class="sb-item ${this.s.view===n.id?'active':''}"
+           onclick="DFM.go('${n.id}',{subView:'list'})">
+        <span class="sb-item-icon">${n.icon}</span>
+        <span>${n.label}</span>
+      </div>`).join('');
+
+    const tblHtml = this.d.tables.map(t=>`
+      <div class="sb-tbl-item ${this.s.tableId===t.id&&this.s.view==='tables'?'active':''}"
+           onclick="DFM.go('tables',{subView:'records',tableId:'${t.id}'})">
+        <span class="sb-tbl-icon">${t.icon}</span>
+        <span>${this.esc(t.name)}</span>
+      </div>`).join('') || '<div style="padding:6px 10px;font-size:12px;color:#475569">No tables yet</div>';
+
+    document.getElementById('sidebar').innerHTML = `
+      <div class="sb-logo">
+        <div class="sb-logo-icon">\ud83d\udcca</div>
+        <div class="sb-logo-text">
+          <div class="sb-logo-title">DataFolio</div>
+          <div class="sb-logo-sub">Manager v1.0</div>
+        </div>
+      </div>
+      <nav class="sb-nav">
+        <div class="sb-section-label">Navigation</div>
+        ${navHtml}
+      </nav>
+      <div class="sb-tables">
+        <div class="sb-tables-hdr">
+          <span class="sb-tables-hdr-label">My Tables</span>
+          <button class="sb-add-btn" onclick="DFM.startNewTable()" title="New Table">+</button>
+        </div>
+        ${tblHtml}
+      </div>`;
+  },
+
+  rTopbar() {
+    const meta = {
+      dashboard: ['Dashboard',    'Your data overview'],
+      tables:    ['Tables',       'Manage your data collections'],
+      search:    ['Search',       'Find anything across your tables'],
+      charts:    ['Charts',       'Visualise your data'],
+      import:    ['Import Excel', 'Upload spreadsheets to import data'],
+    };
+    const [title, sub] = meta[this.s.view]||meta.dashboard;
+
+    let actions = '';
+    if(this.s.view==='tables') {
+      if(this.s.subView==='list') {
+        actions = `<button class="btn btn-primary" onclick="DFM.startNewTable()">+ New Table</button>`;
+      } else if(this.s.subView==='records' && this.s.tableId) {
+        actions = `
+          <button class="btn btn-secondary btn-sm" onclick="DFM.go('tables',{subView:'studio-edit',tableId:'${this.s.tableId}'})">&#9881; Edit Schema</button>
+          <button class="btn btn-primary btn-sm" onclick="DFM.go('tables',{subView:'record-form',tableId:'${this.s.tableId}',editRec:null})">+ Add Record</button>`;
+      }
+    }
+
+    document.getElementById('topbar').innerHTML = `
+      <div>
+        <div class="tb-title">${title}</div>
+        <div class="tb-sub">${sub}</div>
+      </div>
+      <div class="tb-actions">${actions}</div>`;
+  },
+
+  rView() {
+    const el = document.getElementById('view');
+    el.className = 'fade-in';
+    const map = {
+      dashboard: ()=>this.vDashboard(el),
+      tables:    ()=>this.vTables(el),
+      search:    ()=>this.vSearch(el),
+      charts:    ()=>this.vCharts(el),
+      import:    ()=>this.vImport(el),
+    };
+    (map[this.s.view]||map.dashboard)();
+  },
+
+  /* DASHBOARD */
+  vDashboard(el) {
+    const totTbls = this.d.tables.length;
+    const totRecs = Object.values(this.d.records).reduce((a,r)=>a+r.length,0);
+    const totFlds = this.d.tables.reduce((a,t)=>a+t.fields.length,0);
+
+    const cardHtml = this.d.tables.map(t=>{
+      const recs = this.recs(t.id);
+      return `
+        <div class="tbl-card" onclick="DFM.go('tables',{subView:'records',tableId:'${t.id}'})">
+          <div class="tbl-card-icon">${t.icon}</div>
+          <div class="tbl-card-name">${this.esc(t.name)}</div>
+          <div class="tbl-card-meta">${recs.length} records &middot; ${t.fields.length} fields</div>
+          <div class="tbl-card-footer">
+            <span class="badge badge-blue">${t.fields.length} fields</span>
+            <span class="badge badge-green">${recs.length} records</span>
+          </div>
+        </div>`;
+    }).join('');
+
+    el.innerHTML = `
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-icon" style="background:#dbeafe">\ud83d\udcca</div><div class="stat-val">${totTbls}</div><div class="stat-label">Tables</div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:#d1fae5">\ud83d\udcdd</div><div class="stat-val">${totRecs}</div><div class="stat-label">Total Records</div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:#fef3c7">\ud83d\udd21</div><div class="stat-val">${totFlds}</div><div class="stat-label">Total Fields</div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:#fce7f3">\ud83d\udcbe</div><div class="stat-val">${this.storageKB()}</div><div class="stat-label">Storage Used</div></div>
+      </div>
+      <div class="card">
+        <div class="card-hdr">
+          <span class="card-title">Your Tables</span>
+          <button class="btn btn-primary btn-sm" onclick="DFM.startNewTable()">+ New Table</button>
+        </div>
+        <div class="card-body">
+          ${totTbls===0
+            ? `<div class="empty-state"><div class="empty-icon">\ud83d\udccb</div><div class="empty-title">No tables yet</div><div class="empty-sub">Create your first table to get started</div><button class="btn btn-primary" style="margin-top:18px" onclick="DFM.startNewTable()">+ Create Table</button></div>`
+            : `<div class="tbl-grid">${cardHtml}</div>`}
+        </div>
+      </div>`;
+  },
+
+  /* TABLES */
+  vTables(el) {
+    const sub = {
+      list:          ()=>this.vTableList(el),
+      studio:        ()=>this.vStudio(el, false),
+      'studio-edit': ()=>this.vStudio(el, true),
+      records:       ()=>this.vRecords(el),
+      'record-form': ()=>this.vRecordForm(el),
+    };
+    (sub[this.s.subView]||sub.list)();
+  },
+
+  vTableList(el) {
+    const html = this.d.tables.map(t=>{
+      const recs = this.recs(t.id);
+      return `
+        <div class="tbl-card" onclick="DFM.go('tables',{subView:'records',tableId:'${t.id}'})">
+          <div class="tbl-card-icon">${t.icon}</div>
+          <div class="tbl-card-name">${this.esc(t.name)}</div>
+          <div class="tbl-card-meta">${recs.length} records &middot; ${t.fields.length} fields</div>
+          <div class="tbl-card-footer" onclick="event.stopPropagation()">
+            <button class="btn btn-secondary btn-sm" onclick="DFM.go('tables',{subView:'records',tableId:'${t.id}'})">Open</button>
+            <button class="btn btn-danger btn-sm" onclick="DFM.deleteTable('${t.id}')">Delete</button>
+          </div>
+        </div>`;
+    }).join('');
+    el.innerHTML = `
+      <div class="tbl-grid">
+        ${html}
+        <div class="new-tbl-card" onclick="DFM.startNewTable()">
+          <div class="new-tbl-plus">+</div>
+          <div style="font-size:14px;font-weight:600">New Table</div>
+          <div style="font-size:12.5px;color:var(--text-2)">Create a custom data table</div>
+        </div>
+      </div>`;
+  },
+
+  startNewTable() {
+    this.s.newDraft = { name:'', icon:'\ud83d\udccb', fields:[{id:this.uid(),name:'Name',type:'text'}] };
+    this.go('tables',{subView:'studio'});
+  },
+
+  vStudio(el, isEdit) {
+    const draft = isEdit
+      ? (this.s.editDraft || (()=>{
+          const t = this.tbl(this.s.tableId);
+          this.s.editDraft = {name:t.name, icon:t.icon, fields:t.fields.map(f=>({...f}))};
+          return this.s.editDraft;
+        })())
+      : this.s.newDraft;
+
+    const ICONS = ['\ud83d\udccb','\ud83d\udcc1','\ud83c\udf77','\ud83d\udce6','\ud83d\udc65','\ud83c\udfe0','\ud83d\udcc8','\ud83c\udfb5','\ud83c\udfac','\ud83c\udf55','\ud83d\udcda','\ud83d\udcbc','\ud83c\udf0d','\ud83c\udfcb\ufe0f','\ud83d\udc3e','\ud83c\udfa8','\ud83c\udfc6','\ud83c\udf31','\ud83d\udca1','\ud83d\udd2c'];
+    const TYPES = ['text','number','date','photo','yes/no'];
+    const TL    = {text:'\ud83d\udcdd Text',number:'\ud83d\udd22 Number',date:'\ud83d\udcc5 Date',photo:'\ud83d\uddbc\ufe0f Photo','yes/no':'\u2705 Yes/No'};
+
+    const iconHtml = ICONS.map(ic=>`
+      <div class="icon-opt${draft.icon===ic?' sel':''}" onclick="DFM.pickIcon('${ic}',${isEdit})">${ic}</div>`).join('');
+
+    const fieldsHtml = draft.fields.map((f)=>`
+      <div class="field-item" id="fi-${f.id}">
+        <span class="drag-handle">&#11039;</span>
+        <input class="form-input" style="flex:1" type="text" value="${this.esc(f.name)}"
+               placeholder="Field name"
+               oninput="DFM.patchField('${f.id}','name',this.value,${isEdit})">
+        <select class="form-input form-select" style="width:148px"
+                onchange="DFM.patchField('${f.id}','type',this.value,${isEdit})">
+          ${TYPES.map(tp=>`<option value="${tp}"${f.type===tp?' selected':''}>${TL[tp]}</option>`).join('')}
+        </select>
+        <button class="del-field-btn" onclick="DFM.removeField('${f.id}',${isEdit})" title="Remove">&times;</button>
+      </div>`).join('');
+
+    el.innerHTML = `
+      <div class="breadcrumb">
+        <span class="bc-link" onclick="DFM.go('tables',{subView:'list'})">Tables</span>
+        <span class="bc-sep">&rsaquo;</span>
+        <span class="bc-cur">${isEdit?'Edit Schema':'New Table'}</span>
+      </div>
+      <div class="card" style="max-width:700px">
+        <div class="card-hdr"><span class="card-title">${isEdit?'Edit Table Schema':'Create New Table'}</span></div>
+        <div class="card-body">
+          <div class="form-group">
+            <label class="form-label">Table Name</label>
+            <input class="form-input" id="draft-name" type="text"
+                   value="${this.esc(draft.name)}" placeholder="e.g. Contacts, Inventory&hellip;"
+                   oninput="DFM.patchDraftName(this.value,${isEdit})">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Icon</label>
+            <div class="icon-grid">${iconHtml}</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Fields</label>
+            <div class="field-list" id="field-list">${fieldsHtml}</div>
+            <button class="btn btn-secondary btn-sm" onclick="DFM.addField(${isEdit})">+ Add Field</button>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap">
+            <button class="btn btn-primary" onclick="DFM.saveTable(${isEdit})">${isEdit?'Save Changes':'Create Table'}</button>
+            <button class="btn btn-secondary" onclick="DFM.go('tables',{subView:'list'})">Cancel</button>
+            ${isEdit?`<button class="btn btn-danger" style="margin-left:auto" onclick="DFM.deleteTable('${this.s.tableId}')">Delete Table</button>`:''}
+          </div>
+        </div>
+      </div>`;
+  },
+
+  patchDraftName(v,isEdit) { (isEdit?this.s.editDraft:this.s.newDraft).name=v; },
+  patchField(fid,key,val,isEdit) {
+    const d = isEdit?this.s.editDraft:this.s.newDraft;
+    const f = d.fields.find(x=>x.id===fid);
+    if(f) f[key]=val;
+  },
+  pickIcon(icon,isEdit) {
+    this._syncFields(isEdit);
+    (isEdit?this.s.editDraft:this.s.newDraft).icon = icon;
+    this.vStudio(document.getElementById('view'), isEdit);
+  },
+  addField(isEdit) {
+    this._syncFields(isEdit);
+    (isEdit?this.s.editDraft:this.s.newDraft).fields.push({id:this.uid(),name:'',type:'text'});
+    this.vStudio(document.getElementById('view'), isEdit);
+  },
+  removeField(fid,isEdit) {
+    this._syncFields(isEdit);
+    const d = isEdit?this.s.editDraft:this.s.newDraft;
+    d.fields = d.fields.filter(f=>f.id!==fid);
+    this.vStudio(document.getElementById('view'), isEdit);
+  },
+  _syncFields(isEdit) {
+    const d = isEdit?this.s.editDraft:this.s.newDraft;
+    const ni = document.getElementById('draft-name');
+    if(ni) d.name = ni.value;
+    d.fields.forEach(f=>{
+      const ni2 = document.querySelector(`#fi-${f.id} input`);
+      const si  = document.querySelector(`#fi-${f.id} select`);
+      if(ni2) f.name = ni2.value;
+      if(si)  f.type = si.value;
+    });
+  },
+  saveTable(isEdit) {
+    this._syncFields(isEdit);
+    const d = isEdit?this.s.editDraft:this.s.newDraft;
+    if(!d.name.trim()) { alert('Please enter a table name.'); return; }
+    if(!d.fields.length) { alert('Please add at least one field.'); return; }
+    if(isEdit) {
+      const t = this.tbl(this.s.tableId);
+      t.name=d.name; t.icon=d.icon; t.fields=d.fields;
+      this.s.editDraft=null;
+    } else {
+      const newT = {id:this.uid(),name:d.name,icon:d.icon||'\ud83d\udccb',createdAt:new Date().toISOString(),fields:d.fields};
+      this.d.tables.push(newT);
+      this.d.records[newT.id]=[];
+      this.s.tableId=newT.id;
+      this.s.newDraft=null;
+    }
+    this.save();
+    this.go('tables',{subView:'records',tableId:this.s.tableId});
+  },
+  deleteTable(id) {
+    if(!confirm('Delete this table and all its records? This cannot be undone.')) return;
+    this.d.tables = this.d.tables.filter(t=>t.id!==id);
+    delete this.d.records[id];
+    if(this.s.tableId===id) this.s.tableId=null;
+    this.save();
+    this.go('tables',{subView:'list'});
+  },
+
+  vRecords(el) {
+    const t = this.tbl(this.s.tableId);
+    if(!t) { this.go('tables',{subView:'list'}); return; }
+    const recs = this.recs(t.id);
+    const TI = {text:'',number:'',date:'\ud83d\udcc5',photo:'\ud83d\uddbc\ufe0f','yes/no':'\u2705'};
+    const thHtml = t.fields.map(f=>`<th>${TI[f.type]||''} ${this.esc(f.name)}</th>`).join('');
+    const rowHtml = recs.map(r=>{
+      const cells = t.fields.map(f=>{
+        const v = r[f.id];
+        if(f.type==='yes/no') return `<td>${v?'<span class="badge badge-green">&#10003; Yes</span>':'<span class="badge badge-red">&#10007; No</span>'}</td>`;
+        if(f.type==='date')   return `<td>${this.fmtDate(v)}</td>`;
+        if(f.type==='photo')  return `<td>${v?`<img src="${v}" class="photo-thumb" alt="photo">`:'<span style="color:var(--text-3)">&#8212;</span>'}</td>`;
+        const disp = (v!==undefined&&v!==null&&v!=='') ? this.esc(String(v)) : '<span style="color:var(--text-3)">&#8212;</span>';
+        return `<td>${disp}</td>`;
+      }).join('');
+      return `<tr>${cells}<td style="width:90px"><div style="display:flex;gap:5px"><button class="btn btn-secondary btn-xs" onclick="DFM.editRecord('${t.id}','${r.id}')">Edit</button><button class="btn btn-danger btn-xs" onclick="DFM.deleteRecord('${t.id}','${r.id}')">&times;</button></div></td></tr>`;
+    }).join('');
+
+    el.innerHTML = `
+      <div class="breadcrumb">
+        <span class="bc-link" onclick="DFM.go('tables',{subView:'list'})">Tables</span>
+        <span class="bc-sep">&rsaquo;</span>
+        <span class="bc-cur">${t.icon} ${this.esc(t.name)}</span>
+        <span style="margin-left:auto;font-size:12.5px;color:var(--text-2)">${recs.length} records</span>
+      </div>
+      <div class="card">
+        ${recs.length===0
+          ? `<div class="empty-state"><div class="empty-icon">${t.icon}</div><div class="empty-title">No records yet</div><div class="empty-sub">Add your first record to get started</div><button class="btn btn-primary" style="margin-top:18px" onclick="DFM.go('tables',{subView:'record-form',tableId:'${t.id}',editRec:null})">+ Add Record</button></div>`
+          : `<div class="dgrid-wrap"><table class="dgrid"><thead><tr>${thHtml}<th style="width:90px">Actions</th></tr></thead><tbody>${rowHtml}</tbody></table></div>`}
+      </div>`;
+  },
+
+  editRecord(tid, rid) {
+    const rec = this.recs(tid).find(r=>r.id===rid);
+    this.go('tables',{subView:'record-form',tableId:tid,editRec:rec});
+  },
+  deleteRecord(tid, rid) {
+    if(!confirm('Delete this record?')) return;
+    this.d.records[tid] = this.d.records[tid].filter(r=>r.id!==rid);
+    this.save();
+    this.vRecords(document.getElementById('view'));
+  },
+
+  vRecordForm(el) {
+    const t = this.tbl(this.s.tableId);
+    if(!t) return;
+    const rec = this.s.editRec || {};
+    const isEdit = !!this.s.editRec;
+    const TL = {text:'Text',number:'Number',date:'Date',photo:'Photo','yes/no':'Yes / No'};
+
+    const fieldsHtml = t.fields.map(f=>{
+      const v = rec[f.id]??'';
+      let inp='';
+      if(f.type==='text')   inp=`<input class="form-input" type="text" id="f-${f.id}" value="${this.esc(v)}" placeholder="Enter ${this.esc(f.name)}\u2026">`;
+      else if(f.type==='number') inp=`<input class="form-input" type="number" id="f-${f.id}" value="${this.esc(v)}" placeholder="0">`;
+      else if(f.type==='date')   inp=`<input class="form-input" type="date" id="f-${f.id}" value="${this.esc(v)}">` ;
+      else if(f.type==='yes/no') inp=`<div class="toggle-wrap"><label class="toggle"><input type="checkbox" id="f-${f.id}" ${v?'checked':''}><span class="toggle-track"></span></label><span id="tlbl-${f.id}" style="font-size:13.5px;color:var(--text-2)">${v?'Yes':'No'}</span></div>`;
+      else if(f.type==='photo')  inp=`<div>${v?`<img src="${v}" style="height:72px;border-radius:8px;margin-bottom:10px;display:block">`:''}<input type="file" id="f-${f.id}" accept="image/*" class="form-input" style="padding:7px"></div>`;
+      return `<div class="form-group"><label class="form-label">${this.esc(f.name)}<span class="type-chip">${TL[f.type]}</span></label>${inp}</div>`;
+    }).join('');
+
+    el.innerHTML = `
+      <div class="breadcrumb">
+        <span class="bc-link" onclick="DFM.go('tables',{subView:'list'})">Tables</span>
+        <span class="bc-sep">&rsaquo;</span>
+        <span class="bc-link" onclick="DFM.go('tables',{subView:'records',tableId:'${t.id})">${t.icon} ${this.esc(t.name)}</span>
+        <span class="bc-sep">&rsaquo;</span>
+        <span class="bc-cur">${isEdit?'Edit Record':'New Record'}</span>
+      </div>
+      <div class="card" style="max-width:620px">
+        <div class="card-hdr"><span class="card-title">${isEdit?'Edit Record':'Add New Record'}</span></div>
+        <div class="card-body">
+          ${fieldsHtml}
+          <div style="display:flex;gap:10px;margin-top:8px">
+            <button class="btn btn-primary" onclick="DFM.saveRecord('${t.id}','${isEdit?rec.id:''}')"> ${isEdit?'Save Changes':'Add Record'}</button>
+            <button class="btn btn-secondary" onclick="DFM.go('tables',{subView:'records',tableId:'${t.id}'})">Cancel</button>
+          </div>
+        </div>
+      </div>`;
+
+    t.fields.filter(f=>f.type==='yes/no').forEach(f=>{
+      const chk = document.getElementById(`f-${f.id}`);
+      if(chk) chk.addEventListener('change',()=>{
+        const lbl = document.getElementById(`tlbl-${f.id}`);
+        if(lbl) lbl.textContent = chk.checked?'Yes':'No';
+      });
+    });
+  },
+
+  saveRecord(tid, rid) {
+    const t = this.tbl(tid);
+    if(!t) return;
+    const rd = {id: rid||this.uid()};
+    const promises=[];
+    t.fields.forEach(f=>{
+      const el = document.getElementById(`f-${f.id}`);
+      if(!el) return;
+      if(f.type==='yes/no')      rd[f.id]=el.checked;
+      else if(f.type==='number') rd[f.id]=el.value!==''?Number(el.value):null;
+      else if(f.type==='photo') {
+        if(el.files&&el.files[0]) {
+          promises.push(new Promise(res=>{ const fr=new FileReader(); fr.onload=e=>{ rd[f.id]=e.target.result; res(); }; fr.readAsDataURL(el.files[0]); }));
+        } else { rd[f.id]=this.s.editRec?.[f.id]||null; }
+      } else rd[f.id]=el.value;
+    });
+    Promise.all(promises).then(()=>{
+      if(!this.d.records[tid]) this.d.records[tid]=[];
+      if(rid) { const idx=this.d.records[tid].findIndex(r=>r.id===rid); if(idx>=0) this.d.records[tid][idx]=rd; else this.d.records[tid].push(rd); }
+      else this.d.records[tid].push(rd);
+      this.save();
+      this.go('tables',{subView:'records',tableId:tid});
+    });
+  },
+
+  /* SEARCH */
+  vSearch(el) {
+    const q = this.s.searchQ.trim().toLowerCase();
+    let results=[];
+    if(q) {
+      this.d.tables.forEach(t=>{
+        this.recs(t.id).forEach(r=>{
+          if(t.fields.some(f=>String(r[f.id]??'').toLowerCase().includes(q))) results.push({t,r});
+        });
+      });
+    }
+    const resHtml = results.map(({t,r})=>{
+      const ft = t.fields.find(f=>f.type==='text');
+      const title = ft ? this.esc(String(r[ft.id]||'Untitled')) : 'Record';
+      const meta = t.fields.slice(0,4).map(f=>{
+        if(f.type==='photo') return null;
+        const v=r[f.id];
+        if(f.type==='yes/no') return `${this.esc(f.name)}: ${v?'Yes':'No'}`;
+        if(f.type==='date')   return `${this.esc(f.name)}: ${this.fmtDate(v)}`;
+        return `${this.esc(f.name)}: ${this.esc(String(v??''))||'&mdash;'}`;
+      }).filter(Boolean).join(' &middot; ');
+      return `<div class="result-item" onclick="DFM.editRecord('${t.id}','${r.id}')">
+        <span class="result-icon">${t.icon}</span>
+        <div style="flex:1;min-width:0"><div class="result-title">${title}</div><div class="result-meta">${meta}</div></div>
+        <span class="result-tbl">${this.esc(t.name)}</span>
+      </div>`;
+    }).join('');
+
+    el.innerHTML = `
+      <div class="card">
+        <div class="card-body">
+          <div class="search-wrap">
+            <span class="si">&#128269;</span>
+            <input class="form-input" id="sq" type="text"
+                   placeholder="Search across all tables&hellip;"
+                   value="${this.esc(this.s.searchQ)}"
+                   oninput="DFM.s.searchQ=this.value;DFM.vSearch(document.getElementById('view'))">
+          </div>
+          ${!q
+            ? `<div class="empty-state" style="padding:40px"><div class="empty-icon">&#128269;</div><div class="empty-title">Search your data</div><div class="empty-sub">Type above to search across all tables</div></div>`
+            : results.length===0
+              ? `<div class="empty-state" style="padding:40px"><div class="empty-icon">&#128533;</div><div class="empty-title">No results</div><div class="empty-sub">Try a different search term</div></div>`
+              : `<div style="margin-bottom:14px;font-size:13px;color:var(--text-2)">${results.length} result${results.length!==1?'s':''} for &ldquo;<strong>${this.esc(this.s.searchQ)}</strong>&rdquo;</div><div>${resHtml}</div>`}
+        </div>
+      </div>`;
+    document.getElementById('sq')?.focus();
+  },
+
+  /* CHARTS */
+  vCharts(el) {
+    if(!this.s.chartTbl && this.d.tables.length) this.s.chartTbl=this.d.tables[0].id;
+    const t = this.s.chartTbl ? this.tbl(this.s.chartTbl) : null;
+    const selHtml = this.d.tables.map(x=>`<option value="${x.id}"${x.id===this.s.chartTbl?' selected':''}>${x.icon} ${this.esc(x.name)}</option>`).join('');
+
+    let chartsArea='';
+    if(t) {
+      const recs=this.recs(t.id);
+      const numFlds  = t.fields.filter(f=>f.type==='number');
+      const ynoFlds  = t.fields.filter(f=>f.type==='yes/no');
+      const txtFlds  = t.fields.filter(f=>f.type==='text');
+      const statsRows = numFlds.map(f=>{
+        const vals=recs.map(r=>r[f.id]).filter(v=>v!==null&&v!==undefined&&v!=='');
+        const avg = vals.length ? (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1) : '&mdash;';
+        const mx  = vals.length ? Math.max(...vals) : '&mdash;';
+        const mn  = vals.length ? Math.min(...vals) : '&mdash;';
+        return `<div style="border-top:1px solid var(--border);padding-top:14px;margin-top:14px"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-3);margin-bottom:10px">${this.esc(f.name)}</div><div style="display:flex;gap:20px"><div><div style="font-size:22px;font-weight:700">${avg}</div><div style="font-size:11.5px;color:var(--text-2)">Average</div></div><div><div style="font-size:22px;font-weight:700">${mx}</div><div style="font-size:11.5px;color:var(--text-2)">Max</div></div><div><div style="font-size:22px;font-weight:700">${mn}</div><div style="font-size:11.5px;color:var(--text-2)">Min</div></div></div></div>`;
+      }).join('');
+
+      chartsArea = `
+        <div class="charts-2col" style="margin-top:22px">
+          ${numFlds.length>0?`<div class="card"><div class="card-hdr"><span class="card-title">${this.esc(numFlds[0].name)} by Record</span></div><div class="card-body"><div class="chart-wrap"><canvas id="ch-bar"></canvas></div></div></div>`:''}
+          ${ynoFlds.length>0?`<div class="card"><div class="card-hdr"><span class="card-title">${this.esc(ynoFlds[0].name)} Breakdown</span></div><div class="card-body"><div class="chart-wrap"><canvas id="ch-pie"></canvas></div></div></div>`:''}
+          ${txtFlds.length>1?`<div class="card"><div class="card-hdr"><span class="card-title">Distribution by ${this.esc(txtFlds[txtFlds.length-1].name)}</span></div><div class="card-body"><div class="chart-wrap"><canvas id="ch-doughnut"></canvas></div></div></div>`:''}
+          <div class="card"><div class="card-hdr"><span class="card-title">Table Overview</span></div><div class="card-body"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13.5px;color:var(--text-2)">Total Records</span><span style="font-size:26px;font-weight:800">${recs.length}</span></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px"><span style="font-size:13.5px;color:var(--text-2)">Fields</span><span style="font-size:26px;font-weight:800">${t.fields.length}</span></div>${statsRows}</div></div>
+        </div>`;
+    }
+
+    el.innerHTML = `
+      <div class="card" style="margin-bottom:22px">
+        <div class="card-body" style="padding:14px 22px">
+          <div style="display:flex;align-items:center;gap:14px">
+            <label style="font-size:13.5px;font-weight:600;white-space:nowrap">Table:</label>
+            <select class="form-input form-select" style="max-width:280px"
+                    onchange="DFM.destroyCharts();DFM.s.chartTbl=this.value;DFM.vCharts(document.getElementById('view'))">
+              ${selHtml||'<option>No tables</option>'}
+            </select>
+          </div>
+        </div>
+      </div>
+      ${!t
+        ? `<div class="empty-state"><div class="empty-icon">&#128202;</div><div class="empty-title">No data available</div><div class="empty-sub">Create a table with records to see charts</div></div>`
+        : chartsArea}`;
+
+    if(t) setTimeout(()=>this._initCharts(t, this.s.chartTbl), 60);
+  },
+
+  _initCharts(t, tid) {
+    const recs = this.recs(tid);
+    const COLORS = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#f97316','#84cc16'];
+    const numFlds  = t.fields.filter(f=>f.type==='number');
+    const ynoFlds  = t.fields.filter(f=>f.type==='yes/no');
+    const txtFlds  = t.fields.filter(f=>f.type==='text');
+    const base = { responsive:true, maintainAspectRatio:false };
+
+    if(numFlds.length && document.getElementById('ch-bar')) {
+      const nf=numFlds[0], tf=txtFlds[0];
+      const labels = recs.map((r,i)=>tf?String(r[tf.id]||'').substring(0,15):`#${i+1}`);
+      const vals   = recs.map(r=>r[nf.id]||0);
+      this.charts['bar'] = new Chart(document.getElementById('ch-bar'),{
+        type:'bar',
+        data:{labels,datasets:[{label:nf.name,data:vals,backgroundColor:COLORS[0]+'99',borderColor:COLORS[0],borderWidth:2,borderRadius:6}]},
+        options:{...base,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}
+      });
+    }
+    if(ynoFlds.length && document.getElementById('ch-pie')) {
+      const yf=ynoFlds[0];
+      const y=recs.filter(r=>r[yf.id]).length;
+      this.charts['pie'] = new Chart(document.getElementById('ch-pie'),{
+        type:'pie',
+        data:{labels:['Yes','No'],datasets:[{data:[y,recs.length-y],backgroundColor:['#10b981','#ef4444'],borderWidth:0}]},
+        options:{...base,plugins:{legend:{position:'bottom'}}}
+      });
+    }
+    if(txtFlds.length>1 && document.getElementById('ch-doughnut')) {
+      const lf=txtFlds[txtFlds.length-1];
+      const counts={};
+      recs.forEach(r=>{ const v=String(r[lf.id]||'Unknown'); counts[v]=(counts[v]||0)+1; });
+      this.charts['doughnut'] = new Chart(document.getElementById('ch-doughnut'),{
+        type:'doughnut',
+        data:{labels:Object.keys(counts),datasets:[{data:Object.values(counts),backgroundColor:COLORS,borderWidth:0}]},
+        options:{...base,plugins:{legend:{position:'bottom'}}}
+      });
+    }
+  },
+
+  /* IMPORT */
+  vImport(el) {
+    el.innerHTML = `
+      <div style="max-width:700px">
+        <div class="dropzone" id="dz"
+             ondragover="event.preventDefault();this.classList.add('drag-over')"
+             ondragleave="this.classList.remove('drag-over')"
+             ondrop="DFM.onDrop(event)">
+          <div class="dz-icon">&#128202;</div>
+          <div class="dz-title">Drop your Excel file here</div>
+          <div class="dz-sub">Supports .xlsx, .xls and .csv files<br>Your data will be imported as a new table</div>
+          <label class="btn btn-primary" style="cursor:pointer">
+            Browse Files
+            <input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="DFM.onFileSelect(this)">
+          </label>
+        </div>
+        <div id="import-preview" style="margin-top:20px"></div>
+        <div class="card" style="margin-top:22px">
+          <div class="card-hdr"><span class="card-title">How It Works</span></div>
+          <div class="card-body">
+            <div style="display:flex;flex-direction:column;gap:18px">
+              ${[{ic:'&#128193;',n:'1. Select File',d:'Choose an Excel (.xlsx, .xls) or CSV file from your computer.'},{ic:'&#128269;',n:'2. Preview',d:'Review how columns map to DataFolio fields before importing.'},{ic:'&#10024;',n:'3. Import',d:'Your spreadsheet becomes a new searchable, editable DataFolio table.'}].map(s=>`<div style="display:flex;gap:14px;align-items:flex-start"><div style="width:38px;height:38px;background:var(--main-bg);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${s.ic}</div><div><div style="font-weight:600;font-size:13.5px;margin-bottom:3px">${s.n}</div><div style="font-size:13px;color:var(--text-2)">${s.d}</div></div></div>`).join('')}
+            </div>
+          </div>
+        </div>
+      </div>`;
+  },
+
+  onDrop(e) {
+    e.preventDefault();
+    document.getElementById('dz')?.classList.remove('drag-over');
+    const f=e.dataTransfer?.files?.[0];
+    if(f) this.showImportPreview(f);
+  },
+  onFileSelect(inp) { const f=inp.files?.[0]; if(f) this.showImportPreview(f); },
+  showImportPreview(file) {
+    const p=document.getElementById('import-preview');
+    if(!p) return;
+    p.innerHTML=`<div class="card"><div class="card-hdr"><span class="card-title">&#128196; ${this.esc(file.name)}</span><span style="font-size:12.5px;color:var(--text-2)">${(file.size/1024).toFixed(1)} KB</span></div><div class="card-body"><div class="info-box">&#9888;&#65039; <strong>Note:</strong> Full Excel parsing requires a library such as SheetJS. This is a UI demo &mdash; add SheetJS or a backend to enable live imports.</div><div style="display:flex;gap:10px;margin-top:16px"><button class="btn btn-primary" disabled>Import Table (Demo)</button><button class="btn btn-secondary" onclick="document.getElementById('import-preview').innerHTML=''">Cancel</button></div></div></div>`;
+  },
+
+  init() {
+    this.load();
+    this.initDemo();
+    this.render();
+  }
+};
+
+document.addEventListener('DOMContentLoaded', ()=>DFM.init());
+</script>
+</body>
+</html>
